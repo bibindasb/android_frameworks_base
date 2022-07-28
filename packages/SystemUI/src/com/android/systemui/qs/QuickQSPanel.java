@@ -16,10 +16,12 @@
 
 package com.android.systemui.qs;
 
+import android.annotation.NonNull;
 import android.content.Context;
 import android.content.res.Configuration;
 import android.util.AttributeSet;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.LinearLayout;
 
@@ -29,15 +31,24 @@ import com.android.systemui.R;
 import com.android.systemui.plugins.qs.QSTile;
 import com.android.systemui.plugins.qs.QSTile.SignalState;
 import com.android.systemui.plugins.qs.QSTile.State;
+import com.android.systemui.tuner.TunerService;
 
 /**
  * Version of QSPanel that only shows N Quick Tiles in the QS Header.
  */
 public class QuickQSPanel extends QSPanel {
 
+    public static final String QS_SHOW_BRIGHTNESS = "qs_show_brightness";
+
     private static final String TAG = "QuickQSPanel";
     // A fallback value for max tiles number when setting via Tuner (parseNumTiles)
     public static final int TUNER_MAX_TILES_FALLBACK = 6;
+
+    // Tile Columns on normal conditions
+    public int mMaxColumnsPortrait = 5;
+    public int mMaxColumnsLandscape = 6;
+    // Tile Columns when media player is visible
+    public int mMaxColumnsMediaPlayer = 4;
 
     private boolean mDisabledByPolicy;
     private int mMaxTiles;
@@ -45,12 +56,30 @@ public class QuickQSPanel extends QSPanel {
     public QuickQSPanel(Context context, AttributeSet attrs) {
         super(context, attrs);
         mMaxTiles = getResources().getInteger(R.integer.quick_qs_panel_max_tiles);
+        mMaxColumnsPortrait = getResources().getInteger(R.integer.quick_qs_panel_num_columns);
+        mMaxColumnsLandscape = getResources().getInteger(R.integer.quick_qs_panel_num_columns_landscape);
+        mMaxColumnsMediaPlayer = getResources().getInteger(R.integer.quick_qs_panel_num_columns_media);
+    }
+
+    @Override
+    public void setBrightnessView(@NonNull View view) {
+        if (mBrightnessView != null) {
+            removeView(mBrightnessView);
+        }
+        mBrightnessView = view;
+        ViewGroup brightnessViewContainer = findViewById(R.id.qs_brightness_dialog);
+        if (brightnessViewContainer.indexOfChild(view) > -1) {
+            brightnessViewContainer.removeView(view);
+        }
+        brightnessViewContainer.addView(view);
+        setBrightnessViewMargin();
     }
 
     @Override
     protected void setHorizontalContentContainerClipping() {
         mHorizontalContentContainer.setClipToPadding(false);
         mHorizontalContentContainer.setClipChildren(false);
+        updateColumns();
     }
 
     @Override
@@ -104,15 +133,26 @@ public class QuickQSPanel extends QSPanel {
         super.drawTile(r, state);
     }
 
+    public void updateColumns() {
+        boolean isLandscape = getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE;
+
+        int mColumnsMediaPlayer = mUsingHorizontalLayout ?
+            mMaxColumnsMediaPlayer :
+            mMaxColumnsLandscape;
+
+        mTileLayout.setMaxColumns(isLandscape ?
+            mColumnsMediaPlayer :
+            mMaxColumnsPortrait);
+    }
+
     public void setMaxTiles(int maxTiles) {
         mMaxTiles = maxTiles;
     }
 
     @Override
     public void onTuningChanged(String key, String newValue) {
-        if (QS_SHOW_BRIGHTNESS.equals(key)) {
-            // No Brightness or Tooltip for you!
-            super.onTuningChanged(key, "0");
+        if (QS_SHOW_BRIGHTNESS.equals(key) && mBrightnessView != null) {
+            mBrightnessView.setVisibility(VISIBLE);
         }
     }
 
@@ -139,7 +179,7 @@ public class QuickQSPanel extends QSPanel {
     void setDisabledByPolicy(boolean disabled) {
         if (disabled != mDisabledByPolicy) {
             mDisabledByPolicy = disabled;
-            setVisibility(disabled ? View.GONE : View.VISIBLE);
+            setVisibility(disabled ? GONE : VISIBLE);
         }
     }
 
@@ -152,10 +192,10 @@ public class QuickQSPanel extends QSPanel {
     @Override
     public void setVisibility(int visibility) {
         if (mDisabledByPolicy) {
-            if (getVisibility() == View.GONE) {
+            if (getVisibility() == GONE) {
                 return;
             }
-            visibility = View.GONE;
+            visibility = GONE;
         }
         super.setVisibility(visibility);
     }
@@ -194,7 +234,7 @@ public class QuickQSPanel extends QSPanel {
             LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT,
                     LayoutParams.WRAP_CONTENT);
             setLayoutParams(lp);
-            setMaxColumns(4);
+            setMaxColumns(6);
         }
 
         @Override
@@ -259,11 +299,11 @@ public class QuickQSPanel extends QSPanel {
             // We set it as not important while we change this, so setting each tile as selected
             // will not cause them to announce themselves until the user has actually selected the
             // item.
-            setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
+            setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
             for (int i = 0; i < getChildCount(); i++) {
                 getChildAt(i).setSelected(selected);
             }
-            setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_AUTO);
+            setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_AUTO);
             mLastSelected = selected;
         }
     }
