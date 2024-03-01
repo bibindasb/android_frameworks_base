@@ -137,13 +137,13 @@ public class PropImitationHooks {
 
         // Set Pixel Props for Pixel features
 
-        else if (packageName.equals(PACKAGE_GPHOTOS)) {
+        else if (packageName.equals(PACKAGE_GPHOTOS) && !SystemProperties.get("persist.sys.somethingos.gphotos").equals("false")) {
             for (Map.Entry<String, String> prop : propsToChangePixelXL.entrySet()) {
                 String key = prop.getKey();
                 String value = prop.getValue();
                 setPropValue(key, value);
             }
-        } else if (Arrays.asList(packagesToChangePixel8Pro).contains(packageName)) {
+        } else if (Arrays.asList(packagesToChangePixel8Pro).contains(packageName) && !SystemProperties.get("persist.sys.somethingos.gapps").equals("false")) {
             for (Map.Entry<String, String> prop : propsToChangePixel8Pro.entrySet()) {
                 String key = prop.getKey();
                 String value = prop.getValue();
