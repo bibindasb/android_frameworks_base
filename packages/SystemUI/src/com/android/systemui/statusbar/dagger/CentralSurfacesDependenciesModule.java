@@ -20,7 +20,6 @@ import android.app.IActivityManager;
 import android.app.WallpaperManager;
 import android.content.Context;
 import android.hardware.display.DisplayManager;
-import android.media.session.MediaSessionManager;
 import android.os.RemoteException;
 import android.service.dreams.IDreamManager;
 import android.util.Log;
@@ -150,8 +149,7 @@ public interface CentralSurfacesDependenciesModule {
             KeyguardStateController keyguardStateController,
             DumpManager dumpManager,
             WallpaperManager wallpaperManager,
-            DisplayManager displayManager,
-            MediaSessionManager mediaSessionManager) {
+            DisplayManager displayManager) {
         return new NotificationMediaManager(
                 context,
                 centralSurfacesOptionalLazy,
@@ -168,8 +166,7 @@ public interface CentralSurfacesDependenciesModule {
                 keyguardStateController,
                 dumpManager,
                 wallpaperManager,
-                displayManager,
-                mediaSessionManager);
+                displayManager);
     }
 
     /** */
